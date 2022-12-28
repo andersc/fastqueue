@@ -1,0 +1,24 @@
+name: win_arm64
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+jobs:
+
+  build-and-test-windows:
+    name: Build Windows arm64
+    runs-on: windows-latest
+
+    steps:
+      - name: Setup Developer Command Prompt
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: amd64_arm64
+      - name: Check Out Source Code
+        uses: actions/checkout@v2
+      - name: CMake
+        run: cmake -G "Visual Studio 17 2022" -A ARM64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=".\windows.toolchain.cmake" .
+      - name: build
+        run: cmake --build . --config Release
+

@@ -1,0 +1,23 @@
+name: ubuntu_arm64
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Prepare crosscompile
+      run: |
+        sudo apt update
+        sudo apt -y install crossbuild-essential-arm64
+    - name: CMake set-up
+      run: cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=./ubuntu.toolchain.cmake .
+    - name: make
+      run: cmake --build .
