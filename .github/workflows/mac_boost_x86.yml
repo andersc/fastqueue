@@ -13,7 +13,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Install BOOST
+    - name: Install BOOST and NASM
       run: brew install boost nasm
     - name: CMake set-up
       run: cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_APPLE_SILICON_PROCESSOR=x86_64 -DUSE_BOOST=ON .
