@@ -1,0 +1,19 @@
+name: mac_arm64
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: CMake set-up
+      run: cmake . -G Xcode -DCMAKE_TOOLCHAIN_FILE=./apple.toolchain.cmake -DPLATFORM=MAC_ARM64 -DUSE_BOOST=ON
+    - name: make
+      run: cmake --build . --config Release
