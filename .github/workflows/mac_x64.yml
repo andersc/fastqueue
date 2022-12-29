@@ -1,4 +1,4 @@
-name: mac_boost_x86
+name: mac_x64
 
 on:
   push:
@@ -13,9 +13,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-    - name: Install BOOST and NASM
-      run: brew install boost nasm
     - name: CMake set-up
-      run: cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_APPLE_SILICON_PROCESSOR=x86_64 -DUSE_BOOST=ON .
+      run: cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_APPLE_SILICON_PROCESSOR=x86_64 .
     - name: make
       run: cmake --build .

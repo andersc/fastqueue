@@ -1,0 +1,19 @@
+name: win_x64
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: CMake set-up
+      run: cmake -S . `-D CMAKE_BUILD_TYPE=Release`
+    - name: make
+      run: cmake --build . --config Release

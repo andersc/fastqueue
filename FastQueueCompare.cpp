@@ -404,13 +404,11 @@ int main() {
 
     std::thread([pQueue] {
         fastQueueASMConsumer(pQueue, 1);
-        std::cout << "exit consumer" << std::endl;
     }).detach();
 
 
     std::thread([pQueue] {
         fastQueueASMProducer(pQueue, 2);
-        std::cout << "exit producer" << std::endl;
     }).detach();
 
     // Wait for the OS to actually get it done.

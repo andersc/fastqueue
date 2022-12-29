@@ -1,4 +1,4 @@
-name: ubuntu_x86
+name: ubuntu_boost_x64
 
 on:
   push:
@@ -13,8 +13,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - name: Install BOOST and NASM
+      run: |
+        sudo apt update
+        sudo apt -y install libboost-all-dev nasm
     - name: CMake set-up
-      run: cmake -DCMAKE_BUILD_TYPE=Release .
+      run: cmake -DCMAKE_BUILD_TYPE=Release -DUSE_BOOST=ON .
     - name: make
       run: cmake --build .
-      
+
