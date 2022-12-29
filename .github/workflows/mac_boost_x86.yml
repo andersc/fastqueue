@@ -1,0 +1,21 @@
+name: mac_boost_x86
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Install BOOST
+      run: brew install boost
+    - name: CMake set-up
+      run: cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_APPLE_SILICON_PROCESSOR=x86_64 -DUSE_BOOST=ON .
+    - name: make
+      run: cmake --build .

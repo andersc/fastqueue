@@ -1,0 +1,24 @@
+name: ubuntu_boost_x86
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Prepare crosscompile
+      run: |
+        sudo apt update
+        sudo apt -y install libboost-all-dev
+    - name: CMake set-up
+      run: cmake -DCMAKE_BUILD_TYPE=Release -DUSE_BOOST=ON .
+    - name: make
+      run: cmake --build .
+
