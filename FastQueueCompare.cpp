@@ -48,7 +48,11 @@ void boostLockFreeProducer(boost::lockfree::spsc_queue<MyObject *, boost::lockfr
         return;
     }
     while (!gStartBench) {
-        asm("NOP");
+#ifdef _MSC_VER
+        __nop();
+#else
+        asm volatile ("NOP");
+#endif
     }
     uint64_t lCounter = 0;
     while (gActiveProducer) {
@@ -99,7 +103,11 @@ void fastQueueProducer(FastQueue<MyObject *, QUEUE_MASK, L1_CACHE_LINE> *pQueue,
         return;
     }
     while (!gStartBench) {
-        asm("NOP");
+#ifdef _MSC_VER
+        __nop();
+#else
+        asm volatile ("NOP");
+#endif
     }
     uint64_t lCounter = 0;
     while (gActiveProducer) {
@@ -151,7 +159,11 @@ void rigtorpQueueProducer(rigtorp::SPSCQueue<MyObject *> *pQueue, int32_t aCPU) 
         return;
     }
     while (!gStartBench) {
-        asm("NOP");
+#ifdef _MSC_VER
+        __nop();
+#else
+        asm volatile ("NOP");
+#endif
     }
     uint64_t lCounter = 0;
     while (gActiveProducer) {
@@ -204,7 +216,11 @@ void fastQueueASMProducer(FastQueueASM::DataBlock *pQueue, int32_t aCPU) {
         return;
     }
     while (!gStartBench) {
-        asm volatile("NOP");
+#ifdef _MSC_VER
+        __nop();
+#else
+        asm volatile ("NOP");
+#endif
     }
     uint64_t lCounter = 0;
     // uint64_t lDebug = 0;
