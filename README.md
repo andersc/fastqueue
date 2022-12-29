@@ -153,7 +153,7 @@ If the producer and / or consumer irregularly consumes or produces data it might
 
 For more examples see the included implementations and tests.
 
-## Last words
+## Final words
 
 Please steal the PinToCPU.h header it's a cross platform CPU affinity tool. And while you're at it add support for more than 64 CPU's on Windows platforms (I'm obviously not a Windows person ;-) ).
 
