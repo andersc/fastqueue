@@ -4,6 +4,9 @@
 #include <iostream>
 #include <cstdlib>
 #include <memory>
+#ifdef _MSC_VER
+#include <malloc.h>
+#endif
 
 //Remember to set the parameters in the ASM file as well if changed
 #define BUFFER_MASK 15
@@ -47,7 +50,11 @@ namespace FastQueueASM {
         //Verify the compiler generated data block
         static_assert(sizeof(DataBlock) == ((4 * L1_CACHE) + ((BUFFER_MASK + 1) * L1_CACHE) + (L1_CACHE * 2)),
                       "FastQueueASM::DataBlock is not matching expected size");
+#ifdef _MSC_VER
+        auto pData = (DataBlock *)_aligned_malloc(sizeof(DataBlock), L1_CACHE);
+#else
         auto pData = (DataBlock *)std::aligned_alloc(L1_CACHE, sizeof(DataBlock));
+#endif
         if (pData) std::memset((void *) pData, 0, sizeof(DataBlock));
 
         uint64_t lSource = BUFFER_MASK;
@@ -71,7 +78,11 @@ namespace FastQueueASM {
 
     //Free the memory of an allocated queue
     void deleteQueue(DataBlock *pData) {
+#ifdef _MSC_VER
+        _aligned_free(pData);
+#else
         std::free(pData);
+#endif
     }
 
     //Stop queue (Maybe called from any thread)
