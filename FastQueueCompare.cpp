@@ -237,8 +237,6 @@ void fastQueueASMConsumer(FastQueueASM::DataBlock *pQueue, int32_t aCPU) {
         std::cout << "Pin CPU fail. " << std::endl;
         gActiveConsumer--;
         return;
-    } else {
-        std::cout << "Consumer bound to core: " << aCPU << std::endl;
     }
     uint64_t lCounter = 0;
     while (true) {

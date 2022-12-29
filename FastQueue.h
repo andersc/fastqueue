@@ -19,6 +19,8 @@
 // queue.pop is blocking if the queue is empty
 // queue.stopQueue() or a pushed entry will release the spinlock only.
 // auto result = queue.pop();
+// if result is {} this signals all objects are popped and the consumer should
+// not pop any more data
 
 // use tryPush and/or tryPop if you want to avoid spinlock CPU hogging for low
 // frequency data transfer tryPush should be followed by pushAfterTry if used
@@ -26,6 +28,10 @@
 
 // Call queue.stopQueue() from any thread to signal end of transaction
 // the user may drop the queue or pop the queue until {} is returned.
+
+// Call queue.isQueueStopped() to see the status of the queue.
+// May be used to manage the life cycle of the thread pushing data for example.
+
 
 #pragma once
 
@@ -57,8 +63,8 @@ public:
         END_OF_SERVICE,
         READY_TO_POP,
         NOT_READY_TO_POP,
-        NOT_READY_TO_PUSH,
         READY_TO_PUSH,
+        NOT_READY_TO_PUSH,
     };
 
     explicit FastQueue() {
@@ -181,11 +187,13 @@ public:
         return lData;
     }
 
+    //Stop queue (Maybe called from any thread)
     void stopQueue() {
         mExitThread = mWritePosition;
         mExitThreadSemaphore = true;
     }
 
+    //Is the queue stopped?
     bool isQueueStopped() {
         return mExitThreadSemaphore;
     }

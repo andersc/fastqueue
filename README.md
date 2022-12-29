@@ -5,7 +5,7 @@ FastQueue is a single producer single consumer (SPSC) 'process to process queue'
 
 FastQueue is slightly faster than the boost implementation (tested on a handful systems and architectures) and is not as strict as boost is when it comes to data-types it can carry, it's possible to transfer smart pointers for example.
 
-FastQueue is what's called a lock-free queue. However, there must always be some sort of locks to prevent race conditions when two asynchronous workers communicate. Many SPSC solutions use atomics to guard the data. FastQueue uses a memory barrier technique and limit it's usage to 64-bit platforms for cross thread variable data consistency.    
+FastQueue is what's called a lock-free queue. However, there must always be some sort of lock to prevent race conditions when two asynchronous workers communicate. Many SPSC solutions use atomics to guard the data. FastQueue uses a memory barrier technique and limit it's usage to 64-bit platforms for cross thread variable data consistency.    
 
 FastQueue can be pictured as illustrated below:
 
@@ -29,7 +29,7 @@ FastQueue can be pictured as illustrated below:
                                  `───────'                                 
 ```
 
-FastQueue is aiming to be fast. When it comes to measuring performance using templated code the compiler may optimize the final solution in ways where FastQueue might be slower than alternative solutions and/or change its performance depending on other factors such as queue depth and so on. If you're aiming for speed, it might be wise to benchmark FastQueue against other SPSC queues in your implementation, match L1_CACHE size to the executing CPU and tune the queue depth to match the data flow.
+FastQueue is aiming to be fast. When it comes to measuring performance using templated code the compiler may optimize the final solution in ways where FastQueue might change its performance depending on code changes not related to the queue. If you're aiming for speed, it might be wise to benchmark FastQueue against other SPSC queues in your live implementation, match L1_CACHE size to the executing CPU and tune the queue depth to match the data flow avoiding for example hitting the limit too often.
 
 For example in my tests [Rigtorps SPSC](https://github.com/rigtorp/SPSCQueue) queue is really fast on ARM64.
 
@@ -148,14 +148,14 @@ fastQueue.stopQueue();
 
 ```
 
-If the producer and / or consumer irregularly consumes or produces data it might be wise to use the **tryPush** / **pushAfterTry** and **tryPop** / **popAfterTry**. This to avoid spending all CPU time in a spinlock. Using the tryPush/Pop you may sleep or do other things while waiting for data of free queue slots.  
+If the producer and / or consumer irregularly consumes or produces data it might be wise to use the **tryPush** / **pushAfterTry** and **tryPop** / **popAfterTry**. This to avoid spending excessive amount of CPU time in spinlocks. Using the tryPush/Pop you may sleep or do other things while waiting for data to consume or free queue slots to put data in.  
 
 
 For more examples see the included implementations and tests.
 
 ## Final words
 
-Please steal the PinToCPU.h header it's a cross platform CPU affinity tool. And while you're at it add support for more than 64 CPU's on Windows platforms (I'm obviously not a Windows person ;-) ).
+Please steal the PinToCPU.h header it's a cross platform CPU affinity tool. And while you're at it, add support for more than 64 CPU's on Windows platforms (I'm obviously not a Windows person ;-) ).
 
 Have fun and please let me know if you find any quirks bugs or 'ooopses'.
 

@@ -91,4 +91,9 @@ namespace FastQueueASM {
         pData->mExitThreadSemaphore = true;
     }
 
+    //Is the queue stopped?
+    bool isQueueStopped(DataBlock *pData) {
+        return pData->mExitThreadSemaphore;
+    }
+
 }
