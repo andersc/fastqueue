@@ -18,6 +18,7 @@ jobs:
         vcpkg install boost-system:x64-windows
         vcpkg integrate install
         choco install nasm
+        where vcpkg
     - name: CMake set-up
       run: cmake -S . `-D CMAKE_BUILD_TYPE=Release -DUSE_BOOST=ON -DCMAKE_TOOLCHAIN_FILE=.../vcpkg.cmake`
     - name: make
