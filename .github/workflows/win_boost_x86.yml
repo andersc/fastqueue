@@ -12,13 +12,13 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Install BOOST and NASM
       run: |
         vcpkg install boost-system:x64-windows
         vcpkg integrate install
         choco install nasm
     - name: CMake set-up
-      run: cmake -S . `-D CMAKE_BUILD_TYPE=Release -DUSE_BOOST=ON`
+      run: cmake -S . `-D CMAKE_BUILD_TYPE=Release -DUSE_BOOST=ON -DCMAKE_TOOLCHAIN_FILE=.../vcpkg.cmake`
     - name: make
       run: cmake --build . --config Release

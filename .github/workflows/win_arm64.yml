@@ -16,7 +16,7 @@ jobs:
         with:
           arch: amd64_arm64
       - name: Check Out Source Code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: CMake
         run: cmake -G "Visual Studio 17 2022" -A ARM64 -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=".\windows.toolchain.cmake" .
       - name: build
