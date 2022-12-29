@@ -16,6 +16,7 @@ jobs:
     - name: Install BOOST and NASM
       run: |
         vcpkg install boost-system:x64-windows
+        vcpkg install boost-thread:x64-windows
         vcpkg integrate install
         choco install nasm
     - name: CMake set-up
