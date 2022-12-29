@@ -13,10 +13,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
-    - name: Prepare crosscompile
+    - name: Install BOOST and NASM
       run: |
         sudo apt update
-        sudo apt -y install libboost-all-dev
+        sudo apt -y install libboost-all-dev nasm
     - name: CMake set-up
       run: cmake -DCMAKE_BUILD_TYPE=Release -DUSE_BOOST=ON .
     - name: make
