@@ -1,4 +1,4 @@
-name: win_x86
+name: win_boost_x86
 
 on:
   push:
@@ -16,6 +16,7 @@ jobs:
     - name: Install BOOST and NASM
       run: |
         vcpkg install boost-system:x64-windows
+        vcpkg integrate install
         choco install nasm
     - name: CMake set-up
       run: cmake -S . `-D CMAKE_BUILD_TYPE=Release -DUSE_BOOST=ON`
