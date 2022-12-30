@@ -23,7 +23,11 @@
 
 #define QUEUE_MASK 0b1111
 #define L1_CACHE_LINE 64
-#define TEST_TIME_DURATION_SEC 10
+#define TEST_TIME_DURATION_SEC 20
+//Run the producer on CPU
+#define CPU_1 0
+//Run the consumer on CPU
+#define CPU_2 2
 
 std::atomic<uint64_t> gActiveConsumer = 0;
 std::atomic<uint64_t> gCounter = 0;
@@ -272,20 +276,20 @@ int main() {
 
     // Start the consumer(s) / Producer(s)
     gActiveConsumer++;
-    std::thread([lBoostLockFree] { return boostLockFreeConsumer(lBoostLockFree, 1); }).detach();
-    std::thread([lBoostLockFree] { return boostLockFreeProducer(lBoostLockFree, 2); }).detach();
+    std::thread([lBoostLockFree] { return boostLockFreeConsumer(lBoostLockFree, CPU_1); }).detach();
+    std::thread([lBoostLockFree] { return boostLockFreeProducer(lBoostLockFree, CPU_2); }).detach();
 
     // Wait for the OS to actually get it done.
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
     // Start the test
-    std::cout << "boost lock free pointer test started." << std::endl;
+    std::cout << "BoostLockFree pointer test started." << std::endl;
     gStartBench = true;
     std::this_thread::sleep_for(std::chrono::seconds(TEST_TIME_DURATION_SEC));
 
     // End the test
     gActiveProducer = false;
-    std::cout << "boost lock free pointer test ended." << std::endl;
+    std::cout << "BoostLockFree pointer test ended." << std::endl;
 
     // Wait for the consumers to 'join'
     // Why not the classic join? I prepared for a multi thread case I need this function for.
@@ -315,8 +319,8 @@ int main() {
 
     // Start the consumer(s) / Producer(s)
     gActiveConsumer++;
-    std::thread([lFastQueue] { return fastQueueConsumer(lFastQueue, 1); }).detach();
-    std::thread([lFastQueue] { return fastQueueProducer(lFastQueue, 2); }).detach();
+    std::thread([lFastQueue] { return fastQueueConsumer(lFastQueue, CPU_1); }).detach();
+    std::thread([lFastQueue] { return fastQueueProducer(lFastQueue, CPU_2); }).detach();
 
     // Wait for the OS to actually get it done.
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -357,8 +361,8 @@ int main() {
 
     // Start the consumer(s) / Producer(s)
     gActiveConsumer++;
-    std::thread([lRigtorpSPSCQueue] { return rigtorpQueueConsumer(lRigtorpSPSCQueue, 1); }).detach();
-    std::thread([lRigtorpSPSCQueue] { return rigtorpQueueProducer(lRigtorpSPSCQueue, 2); }).detach();
+    std::thread([lRigtorpSPSCQueue] { return rigtorpQueueConsumer(lRigtorpSPSCQueue, CPU_1); }).detach();
+    std::thread([lRigtorpSPSCQueue] { return rigtorpQueueProducer(lRigtorpSPSCQueue, CPU_2); }).detach();
 
     // Wait for the OS to actually get it done.
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -400,14 +404,8 @@ int main() {
     // Start the consumer(s) / Producer(s)
     gActiveConsumer++;
 
-    std::thread([pQueue] {
-        fastQueueASMConsumer(pQueue, 1);
-    }).detach();
-
-
-    std::thread([pQueue] {
-        fastQueueASMProducer(pQueue, 2);
-    }).detach();
+    std::thread([pQueue] {fastQueueASMConsumer(pQueue, CPU_1);}).detach();
+    std::thread([pQueue] {fastQueueASMProducer(pQueue, CPU_2);}).detach();
 
     // Wait for the OS to actually get it done.
     std::this_thread::sleep_for(std::chrono::milliseconds(100));

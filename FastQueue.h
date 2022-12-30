@@ -81,7 +81,7 @@ public:
             throw std::runtime_error(
                     "Buffer size must be a number of contiguous bits set from LSB. Example: 0b00001111 not 0b01001111");
         }
-        if ((uint64_t) &mWritePosition % 8 || (uint64_t) &mReadPosition % 8) {
+        if ((uint64_t) &mWritePositionPush % 8 || (uint64_t) &mReadPositionPop % 8) {
             throw std::runtime_error("Queue-pointers are misaligned in memory.");
         }
     }
@@ -91,14 +91,14 @@ public:
     ///////////////////////
 
     FastQueueMessages tryPush() {
-        if (mWritePosition - mReadPosition >= RING_BUFFER_SIZE || mExitThreadSemaphore) {
+        if (mWritePositionPush - mReadPositionPush >= RING_BUFFER_SIZE || mExitThreadSemaphore) {
             return FastQueueMessages::NOT_READY_TO_PUSH;
         }
         return FastQueueMessages::READY_TO_PUSH;
     }
 
     void pushAfterTry(T &rItem) {
-        mRingBuffer[mWritePosition & RING_BUFFER_SIZE].mObj = std::move(rItem);
+        mRingBuffer[mWritePositionPush & RING_BUFFER_SIZE].mObj = std::move(rItem);
 #if __x86_64__ || _M_X64
         _mm_sfence();
 #elif __aarch64__ || _M_ARM64
@@ -110,16 +110,16 @@ public:
 #else
 #error Architecture not supported
 #endif
-        mWritePosition++;
+        mWritePositionPop = ++mWritePositionPush;
     }
 
      void push(T &rItem) noexcept {
-        while (mWritePosition - mReadPosition >= RING_BUFFER_SIZE) {
+        while (mWritePositionPush - mReadPositionPush >= RING_BUFFER_SIZE) {
             if (mExitThreadSemaphore) {
                 return;
             }
         }
-        mRingBuffer[mWritePosition & RING_BUFFER_SIZE].mObj = std::move(rItem);
+        mRingBuffer[mWritePositionPush & RING_BUFFER_SIZE].mObj = std::move(rItem);
 #if __x86_64__ || _M_X64
         _mm_sfence();
 #elif __aarch64__ || _M_ARM64
@@ -131,7 +131,7 @@ public:
 #else
 #error Architecture not supported
 #endif
-         mWritePosition++;
+         mWritePositionPop = ++mWritePositionPush;
     }
 
     ///////////////////////
@@ -139,8 +139,8 @@ public:
     ///////////////////////
 
     FastQueueMessages tryPop() {
-        if (mWritePosition == mReadPosition) {
-            if ((mExitThread == mReadPosition) && mExitThreadSemaphore) {
+        if (mWritePositionPop == mReadPositionPop) {
+            if ((mExitThread == mReadPositionPop) && mExitThreadSemaphore) {
                 return FastQueueMessages::END_OF_SERVICE;
             }
             return FastQueueMessages::NOT_READY_TO_POP;
@@ -149,7 +149,7 @@ public:
     }
 
     T popAfterTry() {
-        T lData = std::move(mRingBuffer[mReadPosition & RING_BUFFER_SIZE].mObj);
+        T lData = std::move(mRingBuffer[mReadPositionPop & RING_BUFFER_SIZE].mObj);
 #if __x86_64__ || _M_X64
         _mm_lfence();
 #elif __aarch64__ || _M_ARM64
@@ -161,17 +161,17 @@ public:
 #else
 #error Architecture not supported
 #endif
-        mReadPosition++;
+        mReadPositionPush = ++mReadPositionPop;
         return lData;
     }
 
      T pop() noexcept {
-        while (mWritePosition == mReadPosition) {
-            if ((mExitThread == mReadPosition) && mExitThreadSemaphore) {
+        while (mWritePositionPop == mReadPositionPop) {
+            if ((mExitThread == mReadPositionPop) && mExitThreadSemaphore) {
                 return {};
             }
         }
-        T lData = std::move(mRingBuffer[mReadPosition & RING_BUFFER_SIZE].mObj);
+        T lData = std::move(mRingBuffer[mReadPositionPop & RING_BUFFER_SIZE].mObj);
 #if __x86_64__ || _M_X64
          _mm_lfence();
 #elif __aarch64__ || _M_ARM64
@@ -183,13 +183,13 @@ public:
 #else
 #error Architecture not supported
 #endif
-        mReadPosition++;
-        return lData;
+         mReadPositionPush = ++mReadPositionPop;
+         return lData;
     }
 
     //Stop queue (Maybe called from any thread)
     void stopQueue() {
-        mExitThread = mWritePosition;
+        mExitThread = mWritePositionPush;
         mExitThreadSemaphore = true;
     }
 
@@ -210,8 +210,10 @@ private:
     };
 
     alignas(L1_CACHE_LNE) volatile uint8_t mBorderUpp[L1_CACHE_LNE];
-    alignas(L1_CACHE_LNE) volatile uint64_t mWritePosition = 0;
-    alignas(L1_CACHE_LNE) volatile uint64_t mReadPosition = 0;
+    alignas(L1_CACHE_LNE) volatile uint64_t mWritePositionPush = 0;
+    alignas(L1_CACHE_LNE) volatile uint64_t mReadPositionPop = 0;
+    alignas(L1_CACHE_LNE) volatile uint64_t mWritePositionPop = 0;
+    alignas(L1_CACHE_LNE) volatile uint64_t mReadPositionPush = 0;
     alignas(L1_CACHE_LNE) volatile uint64_t mExitThread = 0;
     alignas(L1_CACHE_LNE) volatile bool mExitThreadSemaphore = false;
     alignas(L1_CACHE_LNE) mAlign mRingBuffer[RING_BUFFER_SIZE + 1];
