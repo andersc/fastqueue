@@ -1,10 +1,9 @@
 //
-// Created by Anders Cedronius on 2021-08-22.
+// Created by Anders Cedronius on 2022-10-10.
 //
 
-// Compares FastQueue against boost::lockfree
-
 // speed-test.
+// FastQueue, boost::lockfree, FastQueueASM and Rigtorps SPSC queue
 // 1. Generate the data
 // 2. Stamp something unique
 // 3. Push the data through the queue
@@ -24,10 +23,10 @@
 #define QUEUE_MASK 0b1111
 #define L1_CACHE_LINE 64
 #define TEST_TIME_DURATION_SEC 20
-//Run the producer on CPU
-#define CPU_1 0
 //Run the consumer on CPU
-#define CPU_2 2
+#define CONSUMER_CPU 0
+//Run the producer on CPU
+#define PRODUCER_CPU 2
 
 std::atomic<uint64_t> gActiveConsumer = 0;
 std::atomic<uint64_t> gCounter = 0;
@@ -227,7 +226,6 @@ void fastQueueASMProducer(FastQueueASM::DataBlock *pQueue, int32_t aCPU) {
 #endif
     }
     uint64_t lCounter = 0;
-    // uint64_t lDebug = 0;
     while (gActiveProducer) {
         auto lTheObject = new MyObject();
         lTheObject->mIndex = lCounter++;
@@ -276,8 +274,8 @@ int main() {
 
     // Start the consumer(s) / Producer(s)
     gActiveConsumer++;
-    std::thread([lBoostLockFree] { return boostLockFreeConsumer(lBoostLockFree, CPU_1); }).detach();
-    std::thread([lBoostLockFree] { return boostLockFreeProducer(lBoostLockFree, CPU_2); }).detach();
+    std::thread([lBoostLockFree] { return boostLockFreeConsumer(lBoostLockFree, CONSUMER_CPU); }).detach();
+    std::thread([lBoostLockFree] { return boostLockFreeProducer(lBoostLockFree, PRODUCER_CPU); }).detach();
 
     // Wait for the OS to actually get it done.
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -319,8 +317,8 @@ int main() {
 
     // Start the consumer(s) / Producer(s)
     gActiveConsumer++;
-    std::thread([lFastQueue] { return fastQueueConsumer(lFastQueue, CPU_1); }).detach();
-    std::thread([lFastQueue] { return fastQueueProducer(lFastQueue, CPU_2); }).detach();
+    std::thread([lFastQueue] { return fastQueueConsumer(lFastQueue, CONSUMER_CPU); }).detach();
+    std::thread([lFastQueue] { return fastQueueProducer(lFastQueue, PRODUCER_CPU); }).detach();
 
     // Wait for the OS to actually get it done.
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -361,8 +359,8 @@ int main() {
 
     // Start the consumer(s) / Producer(s)
     gActiveConsumer++;
-    std::thread([lRigtorpSPSCQueue] { return rigtorpQueueConsumer(lRigtorpSPSCQueue, CPU_1); }).detach();
-    std::thread([lRigtorpSPSCQueue] { return rigtorpQueueProducer(lRigtorpSPSCQueue, CPU_2); }).detach();
+    std::thread([lRigtorpSPSCQueue] { return rigtorpQueueConsumer(lRigtorpSPSCQueue, CONSUMER_CPU); }).detach();
+    std::thread([lRigtorpSPSCQueue] { return rigtorpQueueProducer(lRigtorpSPSCQueue, PRODUCER_CPU); }).detach();
 
     // Wait for the OS to actually get it done.
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
@@ -404,8 +402,8 @@ int main() {
     // Start the consumer(s) / Producer(s)
     gActiveConsumer++;
 
-    std::thread([pQueue] {fastQueueASMConsumer(pQueue, CPU_1);}).detach();
-    std::thread([pQueue] {fastQueueASMProducer(pQueue, CPU_2);}).detach();
+    std::thread([pQueue] {fastQueueASMConsumer(pQueue, CONSUMER_CPU);}).detach();
+    std::thread([pQueue] {fastQueueASMProducer(pQueue, PRODUCER_CPU);}).detach();
 
     // Wait for the OS to actually get it done.
     std::this_thread::sleep_for(std::chrono::milliseconds(100));

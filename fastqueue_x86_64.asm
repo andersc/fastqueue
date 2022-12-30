@@ -1,3 +1,5 @@
+; Created by Anders Cedronius
+
 section .text
 bits 64
 

@@ -1,3 +1,7 @@
+//
+// Created by Anders Cedronius
+//
+
 #pragma once
 
 #include <cstdint>
