@@ -36,11 +36,13 @@ namespace FastQueueASM {
         };
 
         alignas(L1_CACHE) volatile uint8_t mBorderUpp[L1_CACHE];
-        alignas(L1_CACHE) volatile uint64_t mWritePosition; //L1CACHE * 1
-        alignas(L1_CACHE) volatile uint64_t mReadPosition;  //L1CACHE * 2
-        alignas(L1_CACHE) volatile uint64_t mExitThread; //L1CACHE * 3
-        alignas(L1_CACHE) volatile uint64_t mExitThreadSemaphore; //L1CACHE * 4
-        alignas(L1_CACHE) volatile mAlign mRingBuffer[BUFFER_MASK + 1]; //L1CACHE * 5
+        alignas(L1_CACHE) volatile uint64_t mWritePositionPush; //L1CACHE * 1
+        alignas(L1_CACHE) volatile uint64_t mReadPositionPush;  //L1CACHE * 2
+        alignas(L1_CACHE) volatile uint64_t mWritePositionPop; //L1CACHE * 3
+        alignas(L1_CACHE) volatile uint64_t mReadPositionPop;  //L1CACHE * 4
+        alignas(L1_CACHE) volatile uint64_t mExitThread; //L1CACHE * 5
+        alignas(L1_CACHE) volatile uint64_t mExitThreadSemaphore; //L1CACHE * 6
+        alignas(L1_CACHE) volatile mAlign mRingBuffer[BUFFER_MASK + 1]; //L1CACHE * 7
         alignas(L1_CACHE) volatile uint8_t mBorderDown[L1_CACHE];
     };
 
@@ -48,7 +50,7 @@ namespace FastQueueASM {
     DataBlock *newQueue() {
 
         //Verify the compiler generated data block
-        static_assert(sizeof(DataBlock) == ((4 * L1_CACHE) + ((BUFFER_MASK + 1) * L1_CACHE) + (L1_CACHE * 2)),
+        static_assert(sizeof(DataBlock) == ((6 * L1_CACHE) + ((BUFFER_MASK + 1) * L1_CACHE) + (L1_CACHE * 2)),
                       "FastQueueASM::DataBlock is not matching expected size");
 #ifdef _MSC_VER
         auto pData = (DataBlock *)_aligned_malloc(sizeof(DataBlock), L1_CACHE);
@@ -87,7 +89,7 @@ namespace FastQueueASM {
 
     //Stop queue (Maybe called from any thread)
     void stopQueue(DataBlock *pData) {
-        pData->mExitThread = pData->mWritePosition;
+        pData->mExitThread = pData->mWritePositionPush;
         pData->mExitThreadSemaphore = true;
     }
 

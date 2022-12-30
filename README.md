@@ -52,6 +52,24 @@ FastQueueASM Transactions -> 9471164/s
 
 However, on X64 platforms I don't see the same gain in my benchmarks. With that said Rigtorps queue is really the one to beat ;-) .
 
+
+**AMD EPYC 7763 64-Core Processor** 
+
+```
+BoostLockFree pointer test started.
+BoostLockFree pointer test ended.
+BoostLockFree Transactions -> 6851164/s
+FastQueue pointer test started.
+FastQueue pointer test ended.
+FastQueue Transactions -> 8516819/s
+Rigtorp pointer test started.
+Rigtorp pointer test ended.
+Rigtorp Transactions -> 8332916/s
+FastQueueASM pointer test started.
+FastQueueASM pointer test ended.
+FastQueueASM Transactions -> 8856282/s
+```
+
 The queue is a header only template class and is implemented in a few lines of C++.
 
 The code compiles on arm64 or x86_64 CPU's running Windows, MacOS or Linux OS.
