@@ -134,6 +134,24 @@ public:
          mWritePositionPop = ++mWritePositionPush;
     }
 
+    void pushRaw(T &rItem) noexcept {
+        while (mWritePositionPush - mReadPositionPush >= RING_BUFFER_SIZE) {
+        }
+        mRingBuffer[mWritePositionPush & RING_BUFFER_SIZE].mObj = std::move(rItem);
+#if __x86_64__ || _M_X64
+        _mm_sfence();
+#elif __aarch64__ || _M_ARM64
+        #ifdef _MSC_VER
+        __dmb(_ARM64_BARRIER_ISHST);
+#else
+        asm volatile("dmb ishst" : : : "memory");
+#endif
+#else
+#error Architecture not supported
+#endif
+        mWritePositionPop = ++mWritePositionPush;
+    }
+
     ///////////////////////
     /// Pop part
     ///////////////////////
@@ -185,6 +203,24 @@ public:
 #endif
          mReadPositionPush = ++mReadPositionPop;
          return lData;
+    }
+
+    void popRaw(T& out) noexcept {
+        while (mWritePositionPop == mReadPositionPop) {
+        }
+        out = std::move(mRingBuffer[mReadPositionPop & RING_BUFFER_SIZE].mObj);
+#if __x86_64__ || _M_X64
+        _mm_lfence();
+#elif __aarch64__ || _M_ARM64
+        #ifdef _MSC_VER
+         __dmb(_ARM64_BARRIER_ISHLD);
+#else
+         asm volatile("dmb ishld" : : : "memory");
+#endif
+#else
+#error Architecture not supported
+#endif
+        mReadPositionPush = ++mReadPositionPop;
     }
 
     //Stop queue (Maybe called from any thread)

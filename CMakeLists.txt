@@ -6,6 +6,8 @@ message(STATUS "Building for architecture: ${CMAKE_SYSTEM_PROCESSOR}")
 
 find_package (Threads REQUIRED)
 
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/deaod_spsc/)
+
 if (CMAKE_SYSTEM_PROCESSOR MATCHES "(x86)|(X86)|(amd64)|(AMD64)")
     if (CMAKE_GENERATOR MATCHES "Visual Studio")
         # Visual Studio specific

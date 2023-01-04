@@ -19,6 +19,7 @@
 #include "FastQueue.h"
 #include "SPSCQueue.h"
 #include "FastQueueASM.h"
+#include "spsc_queue.hpp"
 
 #define QUEUE_MASK 0b1111
 #define L1_CACHE_LINE 64
@@ -242,12 +243,12 @@ void fastQueueASMConsumer(FastQueueASM::DataBlock *pQueue, int32_t aCPU) {
     }
     uint64_t lCounter = 0;
     while (true) {
-        auto lResult = (MyObject*)FastQueueASM::pop_item(pQueue);
+        auto lResult = (MyObject *) FastQueueASM::pop_item(pQueue);
         if (lResult == nullptr) {
             break;
         }
         if (lResult->mIndex != lCounter) {
-            std::cout << "Queue item error " << lResult->mIndex << " " << lCounter  << std::endl;
+            std::cout << "Queue item error " << lResult->mIndex << " " << lCounter << std::endl;
         }
         delete lResult;
         lCounter++;
@@ -262,6 +263,128 @@ void fastQueueASMConsumer(FastQueueASM::DataBlock *pQueue, int32_t aCPU) {
 /// FastQueueASM section End
 ///
 /// -----------------------------------------------------------
+
+/// -----------------------------------------------------------
+///
+/// deaodSPSC section Start
+///
+/// -----------------------------------------------------------
+
+
+void deaodSPSCProducer(deaod::spsc_queue<MyObject *, QUEUE_MASK, 6> *pQueue, int32_t aCPU) {
+    if (!pinThread(aCPU)) {
+        std::cout << "Pin CPU fail. " << std::endl;
+        return;
+    }
+    while (!gStartBench) {
+#ifdef _MSC_VER
+        __nop();
+#else
+        asm volatile ("NOP");
+#endif
+    }
+    uint64_t lCounter = 0;
+    while (gActiveProducer) {
+        auto lTheObject = new MyObject();
+        lTheObject->mIndex = lCounter++;
+        bool lAbleToPush = false;
+        while (!lAbleToPush && gActiveProducer) {
+            lAbleToPush = pQueue->push(lTheObject);
+        }
+    }
+}
+
+void deaodSPSCConsumer(deaod::spsc_queue<MyObject *, QUEUE_MASK, 6> *pQueue, int32_t aCPU) {
+    if (!pinThread(aCPU)) {
+        std::cout << "Pin CPU fail. " << std::endl;
+        gActiveConsumer--;
+        return;
+    }
+    uint64_t lCounter = 0;
+    while (true) {
+
+        MyObject *lResult = nullptr;
+        bool lAbleToPop = false;
+        while (!lAbleToPop && gActiveProducer) {
+            lAbleToPop = pQueue->pop(lResult);
+        }
+        if (lResult == nullptr) {
+            break;
+        }
+        if (lResult->mIndex != lCounter) {
+            std::cout << "Queue item error" << std::endl;
+        }
+        lCounter++;
+        delete lResult;
+    }
+    gCounter += lCounter;
+    gActiveConsumer--;
+}
+
+/// -----------------------------------------------------------
+///
+/// deaodSPSC section End
+///
+/// -----------------------------------------------------------
+
+/// -----------------------------------------------------------
+///
+/// FastQueueRaw section Start
+///
+/// -----------------------------------------------------------
+
+void fastQueueProducerRaw(FastQueue<MyObject *, QUEUE_MASK, L1_CACHE_LINE> *pQueue, int32_t aCPU) {
+    if (!pinThread(aCPU)) {
+        std::cout << "Pin CPU fail. " << std::endl;
+        return;
+    }
+    while (!gStartBench) {
+#ifdef _MSC_VER
+        __nop();
+#else
+        asm volatile ("NOP");
+#endif
+    }
+    uint64_t lCounter = 0;
+    MyObject* lTheObject = nullptr;
+    while (gActiveProducer) {
+        lTheObject = new MyObject();
+        lTheObject->mIndex = lCounter++;
+        pQueue->pushRaw(lTheObject);
+    }
+    lTheObject = nullptr;
+    pQueue->pushRaw(lTheObject);
+}
+
+void fastQueueConsumerRaw(FastQueue<MyObject *, QUEUE_MASK, L1_CACHE_LINE> *pQueue, int32_t aCPU) {
+    if (!pinThread(aCPU)) {
+        std::cout << "Pin CPU fail. " << std::endl;
+        gActiveConsumer--;
+        return;
+    }
+    uint64_t lCounter = 0;
+    MyObject* lResult = nullptr;
+    while (true) {
+         pQueue->popRaw(lResult);
+        if (lResult == nullptr) {
+            break;
+        }
+        if (lResult->mIndex != lCounter) {
+            std::cout << "Queue item error" << std::endl;
+        }
+        lCounter++;
+        delete lResult;
+    }
+    gCounter += lCounter;
+    gActiveConsumer--;
+}
+
+/// -----------------------------------------------------------
+///
+/// FastQueueRaw section End
+///
+/// -----------------------------------------------------------
+
 
 int main() {
 
@@ -306,7 +429,6 @@ int main() {
     gActiveProducer = true;
     gCounter = 0;
     gActiveConsumer = 0;
-
 
     ///
     /// FastQueue test ->
@@ -370,6 +492,7 @@ int main() {
     gStartBench = true;
     std::this_thread::sleep_for(std::chrono::seconds(TEST_TIME_DURATION_SEC));
 
+
     // End the test
     gActiveProducer = false;
     std::cout << "Rigtorp pointer test ended." << std::endl;
@@ -402,8 +525,8 @@ int main() {
     // Start the consumer(s) / Producer(s)
     gActiveConsumer++;
 
-    std::thread([pQueue] {fastQueueASMConsumer(pQueue, CONSUMER_CPU);}).detach();
-    std::thread([pQueue] {fastQueueASMProducer(pQueue, PRODUCER_CPU);}).detach();
+    std::thread([pQueue] { fastQueueASMConsumer(pQueue, CONSUMER_CPU); }).detach();
+    std::thread([pQueue] { fastQueueASMProducer(pQueue, PRODUCER_CPU); }).detach();
 
     // Wait for the OS to actually get it done.
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -428,6 +551,92 @@ int main() {
 
     // Print the result.
     std::cout << "FastQueueASM Transactions -> " << gCounter / TEST_TIME_DURATION_SEC << "/s" << std::endl;
+
+    // Zero the test parameters.
+    gStartBench = false;
+    gActiveProducer = true;
+    gCounter = 0;
+    gActiveConsumer = 0;
+
+    ///
+    /// DeaodSPSC test ->
+    ///
+
+    // Create the queue
+    auto deaodSPSC = new deaod::spsc_queue<MyObject *, QUEUE_MASK, 6>();
+
+    // Start the consumer(s) / Producer(s)
+    gActiveConsumer++;
+
+    std::thread([deaodSPSC] { deaodSPSCConsumer(deaodSPSC, CONSUMER_CPU); }).detach();
+    std::thread([deaodSPSC] { deaodSPSCProducer(deaodSPSC, PRODUCER_CPU); }).detach();
+
+    // Wait for the OS to actually get it done.
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+    // Start the test
+    std::cout << "DeaodSPSC pointer test started." << std::endl;
+    gStartBench = true;
+    std::this_thread::sleep_for(std::chrono::seconds(TEST_TIME_DURATION_SEC));
+
+    // End the test
+    gActiveProducer = false;
+    std::cout << "DeaodSPSC pointer test ended." << std::endl;
+
+    // Wait for the consumers to 'join'
+    // Why not the classic join? I prepared for a multi thread case I need this function for.
+    while (gActiveConsumer) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+
+    // Garbage collect the queue
+    delete deaodSPSC;
+
+    // Print the result.
+    std::cout << "DeaodSPSC Transactions -> " << gCounter / TEST_TIME_DURATION_SEC << "/s" << std::endl;
+
+    // Zero the test parameters.
+    gStartBench = false;
+    gActiveProducer = true;
+    gCounter = 0;
+    gActiveConsumer = 0;
+
+    ///
+    /// FastQueueRaw test ->
+    ///
+
+    // Create the queue
+    auto lFastQueueRaw = new FastQueue<MyObject *, QUEUE_MASK, L1_CACHE_LINE>();
+
+    // Start the consumer(s) / Producer(s)
+    gActiveConsumer++;
+    std::thread([lFastQueueRaw] { return fastQueueConsumerRaw(lFastQueueRaw, CONSUMER_CPU); }).detach();
+    std::thread([lFastQueueRaw] { return fastQueueProducerRaw(lFastQueueRaw, PRODUCER_CPU); }).detach();
+
+    // Wait for the OS to actually get it done.
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+    // Start the test
+    std::cout << "FastQueueRaw pointer test started." << std::endl;
+    gStartBench = true;
+    std::this_thread::sleep_for(std::chrono::seconds(TEST_TIME_DURATION_SEC));
+
+    // End the test
+    gActiveProducer = false;
+    std::cout << "FastQueueRaw pointer test ended." << std::endl;
+
+    // Wait for the consumers to 'join'
+    // Why not the classic join? I prepared for a multi thread case I need this function for.
+    while (gActiveConsumer) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+
+    // Garbage collect the queue
+    delete lFastQueueRaw;
+
+    // Print the result.
+    std::cout << "FastQueueRaw Transactions -> " << gCounter / TEST_TIME_DURATION_SEC << "/s" << std::endl;
+
 
     return EXIT_SUCCESS;
 }
