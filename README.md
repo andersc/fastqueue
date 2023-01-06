@@ -29,8 +29,9 @@ FastQueue can be pictured as illustrated below:
                                  `───────'                                 
 ```
 
-FastQueue is aiming to be fast. When it comes to measuring performance using templated code the compiler may optimize the final solution in ways where FastQueue might change its performance depending on code changes not related to the queue. If you're aiming for speed, it might be wise to benchmark FastQueue against other SPSC queues in your live implementation, match L1_CACHE (see below \*2) size to the executing CPU and tune the queue depth (see below \*1) to match the data flow avoiding for example hitting the limit too often.
+FastQueue is aiming to be among the top performing SPSC queues. When it comes to measuring performance when using templated code the compiler may optimize the final solution in ways where the queue might change its performance depending on code changes not related to the queue. If you're aiming for speed, it might be wise to benchmark FastQueue against other SPSC queues in your live implementation, match L1_CACHE (see below \*2) size to the executing CPU and tune the queue depth (see below \*1) to match the data flow avoiding for example hitting the limit too often.
 
+Various compilers, CPU's and Architectures will result in different reults. 
 For example in my tests [Rigtorps SPSC](https://github.com/rigtorp/SPSCQueue) queue is really fast on ARM64.
 
 **Apple M1 Pro**
@@ -50,8 +51,7 @@ FastQueueASM pointer test ended.
 FastQueueASM Transactions -> 9471164/s
 ```
 
-However, on X64 platforms I don't see the same gain in my benchmarks. With that said Rigtorps queue is really the one to beat ;-) .
-
+However, on X64 platforms I don't see the same gain in my benchmarks. 
 
 **AMD EPYC 7763 64-Core Processor** 
 
@@ -69,6 +69,10 @@ FastQueueASM pointer test started.
 FastQueueASM pointer test ended.
 FastQueueASM Transactions -> 8856282/s
 ```
+
+The fastest queue I've found is Deaod's solution part of FastQueueCompare.cpp. Test with your compiler on your architecture on your CPU to see the result.
+
+## FastQueue Info
 
 The queue is a header only template class and is implemented in a few lines of C++.
 
