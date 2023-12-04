@@ -1,5 +1,9 @@
 ![Logo](fastqueuesmall.png)
 
+# FastQueue
+
+Please also see the development of the next generation of FastQueue ->
+[FastQueue2](https://github.com/andersc/fastqueue2)
 
 FastQueue is a single producer single consumer (SPSC) 'process to process queue' similar to *boost::lockfree::spsc_queue*
 
